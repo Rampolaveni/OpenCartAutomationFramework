@@ -1,0 +1,156 @@
+# =============================================================================
+# requirements.txt — Playwright Python pytest framework
+#
+# SETUP (run these three commands in order):
+#
+#   1. python -m venv venv
+#   2. source venv/bin/activate        # Windows: venv\Scripts\activate
+#   3. pip install -r requirements.txt
+#   4. playwright install chromium     # downloads browser binary
+#
+# CI (GitHub Actions / Jenkins):
+#
+#   pip install -r requirements.txt
+#   playwright install chromium --with-deps
+#
+# Upgrade a package:
+#   pip install --upgrade <package>
+#   then update the pinned version below and commit
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Core — browser automation
+# -----------------------------------------------------------------------------
+
+playwright==1.60.0
+# Playwright itself. Controls Chromium, Firefox, and WebKit via DevTools Protocol.
+# After upgrading, always re-run: playwright install
+
+
+# -----------------------------------------------------------------------------
+# Core — test runner + Playwright plugin
+# -----------------------------------------------------------------------------
+
+pytest==8.3.5
+# The test runner. Discovers test_*.py files, manages fixtures, runs assertions.
+
+pytest-playwright==0.8.0
+# Official pytest plugin for Playwright. Provides:
+#   • Fixtures: page, context, browser, playwright, base_url
+#   • CLI flags: --browser, --headed, --slowmo, --screenshot, --video, --tracing
+# No import needed in tests — fixtures are injected automatically.
+
+
+# -----------------------------------------------------------------------------
+# Parallel execution
+# -----------------------------------------------------------------------------
+
+pytest-xdist==3.8.0
+# Runs tests across multiple CPU cores simultaneously.
+# Usage: pytest -n auto         (auto-detect cores)
+#        pytest -n 4            (fixed 4 workers)
+# Each worker gets its own Browser + BrowserContext — no shared state.
+# Requires tests to be fully independent (no shared DB user, no hardcoded IDs).
+
+
+# -----------------------------------------------------------------------------
+# HTML reporting
+# -----------------------------------------------------------------------------
+
+pytest-html==4.2.0
+# Generates a self-contained HTML test report.
+# Usage: pytest --html=reports/report.html --self-contained-html
+# Tip: add --self-contained-html so the report is a single portable file.
+# Integrates with pytest hooks to embed screenshots on failure.
+
+
+# -----------------------------------------------------------------------------
+# Allure reporting
+# -----------------------------------------------------------------------------
+
+allure-pytest==2.16.0
+# Rich interactive reports with steps, attachments, and history trends.
+#
+# Usage:
+#   pytest --alluredir=allure-results
+#   allure serve allure-results         (opens report in browser)
+#   allure generate allure-results -o allure-report  (static export)
+#
+# Install Allure CLI separately:
+#   brew install allure                 (Mac)
+#   scoop install allure               (Windows)
+#
+# Decorators available in tests:
+#   @allure.feature("Authentication")
+#   @allure.story("Login")
+#   @allure.severity(allure.severity_level.CRITICAL)
+#   with allure.step("Fill login form"): ...
+
+
+# -----------------------------------------------------------------------------
+# Retry flaky tests
+# -----------------------------------------------------------------------------
+
+pytest-rerunfailures==16.3
+# Automatically retries failing tests before marking them as failed.
+# Usage: pytest --reruns 2 --reruns-delay 1
+# Per-test: @pytest.mark.flaky(reruns=3)
+# In pytest.ini: addopts = --reruns 1
+# Best practice: fix flaky tests rather than masking them — but useful
+# for known infrastructure instability (network timeouts, slow CI agents).
+
+
+# -----------------------------------------------------------------------------
+# Excel / spreadsheet support
+# -----------------------------------------------------------------------------
+
+openpyxl==3.1.5
+# Read and write .xlsx files.
+# Used for:
+#   • Data-driven tests: load test inputs from Excel spreadsheets
+#   • Reporting: write test results back into Excel for stakeholders
+#
+# Example — read test data from Excel:
+#   from openpyxl import load_workbook
+#   wb = load_workbook("data/test_cases.xlsx")
+#   ws = wb.active
+#   for row in ws.iter_rows(min_row=2, values_only=True):
+#       email, password, expected = row
+
+
+# -----------------------------------------------------------------------------
+# Fake test data generation
+# -----------------------------------------------------------------------------
+
+Faker==40.23.0
+# Generates realistic fake data for test inputs.
+# Usage:
+#   from faker import Faker
+#   fake = Faker("en_AU")       # Australian locale
+#   fake.name()                 # "Emily Johnson"
+#   fake.email()                # "emily.johnson@example.com"
+#   fake.phone_number()         # "+61 2 1234 5678"
+#   fake.address()              # "42 Collins St, Melbourne VIC 3000"
+#   fake.date_of_birth()        # datetime(1990, 5, 12)
+#   fake.company()              # "Acme Solutions Pty Ltd"
+#   fake.password()             # "x$K9#mLp2"
+# See full provider list: https://faker.readthedocs.io/en/master/providers.html
+
+
+# -----------------------------------------------------------------------------
+# URL slug generation
+# -----------------------------------------------------------------------------
+
+python-slugify==8.0.4
+# Converts any string into a clean URL-safe slug.
+# Used for generating unique test identifiers, file names, and URL fragments.
+#
+# Usage:
+#   from slugify import slugify
+#   slugify("Hello World!")              # "hello-world"
+#   slugify("Ünïcödé string")           # "unicode-string"
+#   slugify("test case #42 (login)")    # "test-case-42-login"
+#   slugify("My Test", separator="_")   # "my_test"
+
+pytest-timeout==2.3.1

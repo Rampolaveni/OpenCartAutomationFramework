@@ -1,0 +1,95 @@
+name: OpenCart UI Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to run tests against"
+        required: true
+        default: "qa"
+        type: choice
+        options:
+          - qa
+          - uat
+          - prod
+
+      marker:
+        description: "Pytest marker expression"
+        required: false
+        default: "regression"
+        type: choice
+        options:
+          - smoke
+          - sanity
+          - regression
+
+jobs:
+  ui-tests:
+    name: UI Tests - ${{ github.event.inputs.env || 'qa' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      TEST_ENV: ${{ github.event.inputs.env || 'qa' }}
+      HEADLESS: "true"
+      BROWSER: "chromium"
+      VIDEO: "retain-on-failure"
+      TRACING: "retain-on-failure"
+      SCREENSHOT: "only-on-failure"
+      PLAYWRIGHT_TIMEOUT: "30000"
+
+      # Use GitHub Secrets for real credentials
+      VALID_EMAIL: ${{ secrets.OPENCART_VALID_EMAIL }}
+      VALID_PASSWORD: ${{ secrets.OPENCART_VALID_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          python -m playwright install --with-deps chromium
+
+      - name: Run UI tests
+        run: |
+          MARKER="${{ github.event.inputs.marker || 'regression' }}"
+          pytest -m "$MARKER" --env="$TEST_ENV"
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ env.TEST_ENV }}
+          path: reports/allure-results
+          retention-days: 14
+
+      - name: Upload full test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ env.TEST_ENV }}
+          path: reports
+          retention-days: 14
