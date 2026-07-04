@@ -18,7 +18,7 @@ pipeline {
 
         choice(
             name: 'TEST_MARKER',
-            choices: ['smoke', 'sanity', 'regression'],
+            choices: ['all', 'smoke', 'sanity', 'regression'],
             description: 'Pytest marker to execute'
         )
 
@@ -58,6 +58,7 @@ pipeline {
         PLAYWRIGHT_TIMEOUT = '30000'
 
         TEST_ENV = "${params.TEST_ENV}"
+        TEST_MARKER = "${params.TEST_MARKER}"
         BROWSER = "${params.BROWSER}"
         HEADLESS = "${params.HEADLESS}"
         VIDEO = "${params.VIDEO}"
@@ -66,6 +67,7 @@ pipeline {
 
         PIP_DISABLE_PIP_VERSION_CHECK = '1'
         PYTHONUNBUFFERED = '1'
+        CI = 'true'
     }
 
     stages {
@@ -134,7 +136,11 @@ pipeline {
         stage('Run UI Tests') {
             steps {
                 bat '''
-                    .venv\\Scripts\\python.exe -m pytest -m "%TEST_MARKER%" --env="%TEST_ENV%" --junitxml=reports\\junit\\results.xml
+                    if "%TEST_MARKER%"=="all" (
+                        .venv\\Scripts\\python.exe -m pytest --env="%TEST_ENV%" --junitxml=reports\\junit\\results.xml
+                    ) else (
+                        .venv\\Scripts\\python.exe -m pytest -m "%TEST_MARKER%" --env="%TEST_ENV%" --junitxml=reports\\junit\\results.xml
+                    )
                 '''
             }
         }
@@ -142,9 +148,17 @@ pipeline {
 
     post {
         always {
-            echo 'Archiving test reports and artifacts...'
+            echo 'Publishing JUnit and Allure reports...'
 
             junit allowEmptyResults: true, testResults: 'reports/junit/results.xml'
+
+            allure([
+                includeProperties: false,
+                jdk: '',
+                properties: [],
+                reportBuildPolicy: 'ALWAYS',
+                results: [[path: 'reports/allure-results']]
+            ])
 
             archiveArtifacts(
                 artifacts: 'reports/**/*',
@@ -158,7 +172,7 @@ pipeline {
         }
 
         failure {
-            echo 'UI tests failed. Check screenshots, traces, videos, logs, and Allure results.'
+            echo 'UI tests failed. Check Allure report, screenshots, traces, videos, and logs.'
         }
 
         cleanup {
