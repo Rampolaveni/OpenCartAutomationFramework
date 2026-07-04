@@ -7,7 +7,7 @@ PROD_CONFIG = {
     "headed": False,
     "slow_mo": 0,
 
-    "timeout": 30000,
+    "playwright_timeout": 30000,
 
     "viewport": {
         "width": 1366,

@@ -9,47 +9,33 @@ from playwright.sync_api import sync_playwright
 from config.config_manager import ConfigManager
 from core.pageManager import PageManager
 from core.logger import get_logger, get_session_log_file
+from core.paths import (
+    ROOT_DIR,
+    REPORTS_DIR,
+    ALLURE_RESULTS_DIR,
+    ALLURE_HISTORY_DIR,
+    ALLURE_REPORTS_DIR,
+    HTML_REPORTS_DIR,
+    SCREENSHOTS_DIR,
+    TRACES_DIR,
+    VIDEOS_DIR,
+    LOGS_DIR,
+    create_report_directories,
+)
 
 
 log = get_logger("conftest")
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config):
+    """
+    Forces Allure results to always be generated under project-root/reports,
+    regardless of whether tests are run from PyCharm, terminal, Jenkins, or tests/ directory.
+    """
+    create_report_directories()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PROJECT / REPORT DIRECTORIES
-# ─────────────────────────────────────────────────────────────────────────────
-
-ROOT_DIR = Path(__file__).resolve().parent
-
-REPORTS_DIR = ROOT_DIR / "reports"
-ALLURE_RESULTS_DIR = REPORTS_DIR / "allure-results"
-ALLURE_HISTORY_DIR = REPORTS_DIR / "allure-history"
-ALLURE_REPORTS_DIR = REPORTS_DIR / "allure-reports"
-HTML_REPORTS_DIR = REPORTS_DIR / "html-reports"
-SCREENSHOTS_DIR = REPORTS_DIR / "screenshots"
-TRACES_DIR = REPORTS_DIR / "traces"
-VIDEOS_DIR = REPORTS_DIR / "videos"
-LOGS_DIR = REPORTS_DIR / "logs"
-
-
-def create_report_directories():
-    directories = [
-        REPORTS_DIR,
-        ALLURE_RESULTS_DIR,
-        ALLURE_HISTORY_DIR,
-        ALLURE_REPORTS_DIR,
-        HTML_REPORTS_DIR,
-        SCREENSHOTS_DIR,
-        TRACES_DIR,
-        VIDEOS_DIR,
-        LOGS_DIR,
-    ]
-
-    for directory in directories:
-        directory.mkdir(parents=True, exist_ok=True)
-
-
-create_report_directories()
-
+    if hasattr(config.option, "allure_report_dir"):
+        config.option.allure_report_dir = str(ALLURE_RESULTS_DIR)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PYTEST COMMAND LINE OPTIONS
