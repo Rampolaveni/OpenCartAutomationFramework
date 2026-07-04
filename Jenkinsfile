@@ -6,6 +6,7 @@ pipeline {
         timeout(time: 45, unit: 'MINUTES')
         buildDiscarder(logRotator(numToKeepStr: '20'))
         disableConcurrentBuilds()
+        skipDefaultCheckout(true)
     }
 
     parameters {
@@ -53,7 +54,7 @@ pipeline {
     }
 
     environment {
-        PYTHON_VERSION = 'python3'
+        PYTHON_EXE = 'python'
         PLAYWRIGHT_TIMEOUT = '30000'
 
         TEST_ENV = "${params.TEST_ENV}"
@@ -74,66 +75,67 @@ pipeline {
             }
         }
 
+        stage('Verify Workspace') {
+            steps {
+                bat '''
+                    echo Current workspace:
+                    cd
+
+                    echo Project files:
+                    dir
+                '''
+            }
+        }
+
         stage('Create Virtual Environment') {
             steps {
-                sh '''
-                    rm -rf .venv
-                    ${PYTHON_VERSION} -m venv .venv
-                    . .venv/bin/activate
-                    python -m pip install --upgrade pip
+                bat '''
+                    if exist .venv rmdir /s /q .venv
+
+                    %PYTHON_EXE% -m venv .venv
+
+                    .venv\\Scripts\\python.exe -m pip install --upgrade pip
                 '''
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    . .venv/bin/activate
-                    pip install -r requirements.txt
+                bat '''
+                    .venv\\Scripts\\python.exe -m pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Install Playwright Browsers') {
             steps {
-                sh '''
-                    . .venv/bin/activate
-                    python -m playwright install --with-deps ${BROWSER}
+                bat '''
+                    .venv\\Scripts\\python.exe -m playwright install %BROWSER%
                 '''
             }
         }
 
         stage('Prepare Reports Directory') {
             steps {
-                sh '''
-                    rm -rf reports
-                    mkdir -p reports/allure-results
-                    mkdir -p reports/junit
-                    mkdir -p reports/screenshots
-                    mkdir -p reports/traces
-                    mkdir -p reports/videos
-                    mkdir -p reports/logs
+                bat '''
+                    if exist reports rmdir /s /q reports
+
+                    mkdir reports
+                    mkdir reports\\allure-results
+                    mkdir reports\\junit
+                    mkdir reports\\screenshots
+                    mkdir reports\\traces
+                    mkdir reports\\videos
+                    mkdir reports\\logs
                 '''
             }
         }
 
         stage('Run UI Tests') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'opencart-valid-login',
-                        usernameVariable: 'VALID_EMAIL',
-                        passwordVariable: 'VALID_PASSWORD'
-                    )
-                ]) {
-                    sh '''
-                        . .venv/bin/activate
-
-                        pytest -m "${TEST_MARKER}" \
-                            --env="${TEST_ENV}" \
-                            --junitxml=reports/junit/results.xml
-                    '''
-                }
+                bat '''
+                    .venv\\Scripts\\python.exe -m pytest -m "%TEST_MARKER%" --env="%TEST_ENV%" --junitxml=reports\\junit\\results.xml
+                '''
             }
         }
     }
@@ -160,8 +162,8 @@ pipeline {
         }
 
         cleanup {
-            sh '''
-                rm -rf .venv
+            bat '''
+                if exist .venv rmdir /s /q .venv
             '''
         }
     }
