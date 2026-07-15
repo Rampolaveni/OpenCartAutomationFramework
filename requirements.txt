@@ -154,3 +154,4 @@ python-slugify==8.0.4
 #   slugify("My Test", separator="_")   # "my_test"
 
 pytest-timeout==2.3.1
+requests>=2.32,<3
