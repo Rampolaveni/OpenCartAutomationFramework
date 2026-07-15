@@ -26,6 +26,10 @@ from core.paths import (
 
 log = get_logger("conftest")
 
+pytest_plugins = [
+    "core.testrail.pytest_plugin",
+]
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
     """
@@ -136,6 +140,9 @@ def env_config(request):
     log.info(f"CI                    : {os.getenv('CI', 'false')}")
     log.info("─" * 80)
 
+    # Makes the final runtime configuration available
+    # to TestRail and other framework plugins.
+    request.config._runtime_env_config = config
     write_allure_environment_file(config)
 
     return config
